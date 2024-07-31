@@ -26,30 +26,46 @@ import os, sys
 # Quelques constantes
 #
 
+# Cette application ...
+APP_NAME = "fortivpn"
+APP_RELEASE = "0.1.1"
+
 # GUI
-TK_TITLE = "Lancement de FortiVPN"
+TK_TITLE = f"Lancement de {APP_NAME} v{APP_RELEASE}"
 TK_WIN_WITH = 300
 TK_WIN_HEIGHT = 400
 
-TK_ERROR = "Erreur"
+TK_ERROR    = "Erreur"
+TK_WARNING  = "Attention"
 
-# Application
+# Application et commandes
 APP_VPN_NAME    = "openfortivpn"    # Le chemin sera cherché par le programme
-
+CMD_WHICH        = "which"
 
 #
 #   Point d'entrée du programme
 #
 if "__main__" == __name__:
     # On s'assure que l'application est installée sur le poste
-    retour = subprocess.run(['which', APP_VPN_NAME], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    retour = subprocess.CompletedProcess
+    try:
+        retour = subprocess.run([CMD_WHICH, APP_VPN_NAME], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+    except subprocess.CalledProcessError:
+        tkMB.showerror(title=TK_ERROR, message=f"Erreur lors de l'appel de la commande {CMD_WHICH}")
+        exit(2)
+    except FileNotFoundError:
+        tkMB.showerror(title=TK_ERROR, message=f"La commande '{CMD_WHICH}' est introuvable")
+        exit(2)
+
     if not retour.returncode == 0:
         #print(f"Erreur - Le module '{APP_VPN_NAME}' n'est pas installé")
-        tkMB.showwarning(title=TK_ERROR, message=f"Le module '{APP_VPN_NAME}' n'est pas installé")
-        exit(2)
+        tkMB.showwarning(title=TK_WARNING, message=f"Le module '{APP_VPN_NAME}' n'est pas installé")
+        exit(3)
 
     # Extraction du chemin complet vers l'application
     buffer = io.StringIO(retour.stdout)
     appPath = buffer.readline() # retrait du sut de ligne final
+    #print(appPath)
+
 
 # EOF
