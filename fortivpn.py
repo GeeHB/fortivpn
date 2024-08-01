@@ -173,21 +173,28 @@ def _getAppPathName() -> str:
     buffer = io.StringIO(retour.stdout)
     return buffer.readline() # retrait du saut de ligne final
 
+# _getAppPathName : Recherche du nom complet de l'utilitaire openfortivpn
+#
+# retour : Nom complet de l'utilitaire ou "" en cas d'erreur
+#
+def _hasRights() -> bool:
+    valid = True
+    if os.geteuid() != 0:
+        msg = "[sudo] entrez le mot de passe pour %u: "
+        try:
+            valid = (0 == subprocess.check_call("sudo -v -p '%s'" % msg, shell=True))
+        except subprocess.CalledProcessError:
+            valid = False
+
+    return valid
+
 #
 #   Point d'entrée du programme
 #
 if "__main__" == __name__:
 
-    # L'utilisateur courant doit avoir les droit de root (root ou sudoer)
-    ret = 0
-    if os.geteuid() != 0:
-        msg = "[sudo] entrez le mot de passe pour %u: "
-        try:
-            ret = subprocess.check_call("sudo -v -p '%s'" % msg, shell=True)
-        except subprocess.CalledProcessError:
-            ret = 1
-
-    if ret != 0:
+    # L'utilisateur courant doit avoir les droits de root (root ou sudoer)
+    if not _hasRights():
         print("Vous devez disposer des droits de 'root' pour lancer ce script")
         exit(2)
 
