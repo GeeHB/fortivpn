@@ -21,8 +21,7 @@ except ModuleNotFoundError:
     print("Le module tkinter n'est pas installé")
     exit(1)
 
-import subprocess, io
-import os, sys
+import subprocess, io, errno, os, sys
 
 # Quelques constantes
 #
@@ -180,7 +179,17 @@ def _getAppPathName() -> str:
 if "__main__" == __name__:
 
     # L'utilisateur courant doit avoir les droit de root (root ou sudoer)
+    ret = 0
+    if os.geteuid() != 0:
+        msg = "[sudo] entrez le mot de passe pour %u: "
+        try:
+            ret = subprocess.check_call("sudo -v -p '%s'" % msg, shell=True)
+        except subprocess.CalledProcessError:
+            ret = 1
 
+    if ret != 0:
+        print("Vous devez disposer des droits de 'root' pour lancer ce script")
+        exit(2)
 
     # On s'assure que l'application est installée sur le poste
     appPath = _getAppPathName()
