@@ -2,9 +2,9 @@
 #
 # coding=UTF-8
 #
-#   File        :   fortivpn.py
+#   Fichier     :   fortivpn.py
 #
-#   Author      :   JHB
+#   Auteur      :   JHB
 #
 #   Description :   Ouverture du VPN
 #
@@ -46,7 +46,7 @@ TK_USER_PWD         = "Mot de passe"
 TK_ERROR    = "Erreur"
 TK_WARNING  = "Attention"
 
-# Application et commandes
+# Applications et commandes
 APP_VPN_NAME    = "openfortivpn"    # Le chemin sera cherché par le programme
 CMD_WHICH        = "which"
 
@@ -59,20 +59,23 @@ CMD_WHICH        = "which"
 class mainFrame():
 
     # Construction
-    def __init__(self, root, bin):
-
-        # Conservation des paramètres
-        self.root_ = root
-        self.bin_ = bin
-
+    def __init__(self):
+        # Initialisation des données membres
         self.connected_ = False # Non connecté
+        self.bin_ = ""
+
+    # Lancement de la GUI
+    def show(self, parent):
+
+        # Récupération des paramètres
+        self.parent_ = parent
 
         # Police par défaut ...
         self.ownFont_ = tkFont.nametofont("TkDefaultFont")
         self.ownFont_.configure(family="Arial", weight="normal", size=11)
 
         # Ajout du gestionnaire d'onglets' ...
-        self.tabControl_ = ttk.Notebook(self.root_)
+        self.tabControl_ = ttk.Notebook(self.parent_)
 
         # ... avec 2 onglets
         self.connectionTab_ = ttk.Frame(self.tabControl_)
@@ -115,14 +118,48 @@ class mainFrame():
 
         # Gestion de la retaille
         #
-        self.root_.grid_rowconfigure(2, weight=1)
-        self.root_.grid_columnconfigure(0, weight=1)
+        self.parent_.grid_rowconfigure(2, weight=1)
+        self.parent_.grid_columnconfigure(0, weight=1)
 
         self.tabControl_.grid_columnconfigure(0, weight=1)
         self.tabControl_.grid_rowconfigure(0, weight=1)
 
         self.logsTab_.grid_columnconfigure(0, weight=1)
         self.logsTab_.grid_rowconfigure(0, weight=1)
+
+    # L'utilisateur courant peut-il lancer l'app (sudoer ou root)
+    def hasRights(self):
+        valid = True    # si root
+        if os.geteuid() != 0:
+            msg = "[sudo] Mot de passe de %u : "
+            try:
+                valid = (0 == subprocess.check_call("sudo -v -p '%s'" % msg, shell=True))
+            except subprocess.CalledProcessError:
+                valid = False
+        return valid
+
+    # Vérficiation de l'environnement
+    #   récupération du nom du binaire'
+    def checkEnviroment(self):
+        retour = subprocess.CompletedProcess
+        try:
+            retour = subprocess.run([CMD_WHICH, APP_VPN_NAME], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        except subprocess.CalledProcessError:
+            tkMB.showerror(title=TK_ERROR, message=f"Erreur lors de l'appel de la commande {CMD_WHICH}")
+            return False
+        except FileNotFoundError:
+            tkMB.showerror(title=TK_ERROR, message=f"La commande '{CMD_WHICH}' est introuvable")
+            return False
+
+        if retour.returncode != 0:
+            #print(f"Erreur - Le module '{APP_VPN_NAME}' n'est pas installé")
+            tkMB.showwarning(title=TK_WARNING, message=f"Le module '{APP_VPN_NAME}' n'est pas installé")
+            return False
+
+        # Extraction du chemin complet vers l'application
+        buffer = io.StringIO(retour.stdout)
+        self.bin = buffer.readline() # retrait du saut de ligne final
+        return True
 
     # Lecture et affichage des valeurs par défaut
     def defautValues(self):
@@ -149,79 +186,39 @@ class mainFrame():
     def __endConnection(self):
         pass
 
-# _getAppPathName : Recherche du nom complet de l'utilitaire openfortivpn
-#
-# retour : Nom complet de l'utilitaire ou "" en cas d'erreur
-#
-def _getAppPathName() -> str:
-    retour = subprocess.CompletedProcess
-    try:
-        retour = subprocess.run([CMD_WHICH, APP_VPN_NAME], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-    except subprocess.CalledProcessError:
-        tkMB.showerror(title=TK_ERROR, message=f"Erreur lors de l'appel de la commande {CMD_WHICH}")
-        return ""
-    except FileNotFoundError:
-        tkMB.showerror(title=TK_ERROR, message=f"La commande '{CMD_WHICH}' est introuvable")
-        return ""
-
-    if retour.returncode != 0:
-        #print(f"Erreur - Le module '{APP_VPN_NAME}' n'est pas installé")
-        tkMB.showwarning(title=TK_WARNING, message=f"Le module '{APP_VPN_NAME}' n'est pas installé")
-        return ""
-
-    # Extraction du chemin complet vers l'application
-    buffer = io.StringIO(retour.stdout)
-    return buffer.readline() # retrait du saut de ligne final
-
-# _getAppPathName : Recherche du nom complet de l'utilitaire openfortivpn
-#
-# retour : Nom complet de l'utilitaire ou "" en cas d'erreur
-#
-def _hasRights() -> bool:
-    valid = True
-    if os.geteuid() != 0:
-        msg = "[sudo] entrez le mot de passe pour %u: "
-        try:
-            valid = (0 == subprocess.check_call("sudo -v -p '%s'" % msg, shell=True))
-        except subprocess.CalledProcessError:
-            valid = False
-
-    return valid
-
 #
 #   Point d'entrée du programme
 #
 if "__main__" == __name__:
 
+    myFrame = mainFrame()   # Lancement de l'objet "fenêtre'
+
     # L'utilisateur courant doit avoir les droits de root (root ou sudoer)
-    if not _hasRights():
+    if not myFrame.hasRights():
         print("Vous devez disposer des droits de 'root' pour lancer ce script")
         exit(2)
 
     # On s'assure que l'application est installée sur le poste
-    appPath = _getAppPathName()
-    if len(appPath) > 0:
-        # Elle est correctement installée
-        #print(appPath)
+    if not myFrame.checkEnviroment():
+        exit(3)
 
-        # Création et affichage de la fenêtre
-        #
-        tkRoot = tk.Tk()
-        tkRoot.geometry(f"{TK_WIN_WITH}x{TK_WIN_HEIGHT}")
-        tkRoot.title(TK_TITLE)
+    # Création et affichage de la fenêtre
+    #
+    tkRoot = tk.Tk()
+    tkRoot.geometry(f"{TK_WIN_WITH}x{TK_WIN_HEIGHT}")
+    tkRoot.title(TK_TITLE)
 
-        # Le contenu
-        myFrame = mainFrame(tkRoot, appPath)
-        myFrame.defautValues()  # Mise à jour des valeurs par défaut
+    # Le contenu
+    myFrame.show(tkRoot)
+    myFrame.defautValues()  # Mise à jour des valeurs par défaut
 
-        # Gestion des évènements
-        tkRoot.mainloop()
+    # Gestion des évènements
+    tkRoot.mainloop()
 
-        # Deconnexion (si nécessaire)
-        myFrame.disConnect()
+    # Deconnexion (si nécessaire)
+    myFrame.disConnect()
 
-        # Enregistrement des valeurs saisies
-        myFrame.saveValues()
-
+    # Enregistrement des valeurs saisies
+    myFrame.saveValues()
 
 # EOF
