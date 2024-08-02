@@ -18,7 +18,7 @@ try:
     import tkinter.filedialog as tkDialog
     import tkinter.scrolledtext as tkScrolledText
 except ModuleNotFoundError:
-    print("Le module tkinter n'est pas installé")
+    print("Le module tkinter n'est pas installé. Selon votre OS tapez :\n\t- Debian/Ubuntu : sudo apt install python3-tk\n\t- Fedora/RH : sudo dnf install python3-tkinter")
     exit(1)
 
 import subprocess, io, errno, os, sys
@@ -164,7 +164,7 @@ def _getAppPathName() -> str:
         tkMB.showerror(title=TK_ERROR, message=f"La commande '{CMD_WHICH}' est introuvable")
         return ""
 
-    if not retour.returncode == 0:
+    if retour.returncode != 0:
         #print(f"Erreur - Le module '{APP_VPN_NAME}' n'est pas installé")
         tkMB.showwarning(title=TK_WARNING, message=f"Le module '{APP_VPN_NAME}' n'est pas installé")
         return ""
