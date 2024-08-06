@@ -43,6 +43,9 @@ TK_CERT             = "Certificat"
 TK_USER_NAME        = "Compte"
 TK_USER_PWD         = "Mot de passe"
 
+TK_CONNECT          = "Connexion"
+TK_DISCONNECT       = "Deconnexion"
+
 TK_ERROR    = "Erreur"
 TK_WARNING  = "Attention"
 
@@ -62,7 +65,7 @@ class mainFrame():
     def __init__(self):
         # Initialisation des données membres
         self.connected_ = False # Non connecté
-        self.bin_ = ""
+        self.appName_ = ""
 
     # Lancement de la GUI
     def show(self, parent):
@@ -98,19 +101,29 @@ class mainFrame():
         self.CERTEdit_ = ttk.Entry(self.connectionTab_)
         self.CERTEdit_.grid(column=3, row=2, columnspan=3)
 
-
-
         # Nom de l'utilisateur'
         """
-        ttk.Label(self.connectTab_, text = f"{TK_USER_NAME} :").grid(column=0, row=1, padx=5, pady=5)
-        self.userNameEdit_ = ttk.Entry(self.connectTab_)
-        self.userNameEdit_.grid(column=1, row=1, columnspan=8, padx=0, pady=0)
+        ttk.Label(self.connectionTab_, text = f"{TK_USER_NAME} :").grid(column=0, row=1, padx=5, pady=5)
+        self.userNameEdit_ = ttk.Entry(self.connectionTab_)
+        self.userNameEdit_.grid(column=1, row=3, columnspan=8, padx=0, pady=0)
 
         # Mot de passe
-        ttk.Label(self.connectTab_, text = f"{TK_USER_PWD} :").grid(column=0, row=2, padx=5, pady=5)
-        self.userPwdEdit_ = ttk.Entry(self.connectTab_)
-        self.userPwdEdit_.grid(column=1, row=2, columnspan=8, padx=0, pady=0)
+        ttk.Label(self.connectionTab_, text = f"{TK_USER_PWD} :").grid(column=0, row=2, padx=5, pady=5)
+        self.userPwdEdit_ = ttk.Entry(self.connectionTab_)
+        self.userPwdEdit_.grid(column=1, row=4, columnspan=8, padx=0, pady=0)
         """
+
+        # Boutons de (de)connexion
+        #
+        self.connectButton_ = ttk.Button(self.connectionTab_, text=TK_CONNECT,
+                                    command=self.__startConnection)
+        self.connectButton_.grid(column=2, row=5, padx=5, pady=25)
+
+        self.disConnectButton_ = ttk.Button(self.connectionTab_, text=TK_DISCONNECT,
+                                    command=self.__startConnection,
+                                    state = tk.DISABLED)
+        self.disConnectButton_.grid(column=3, row=5, padx=5, pady=25)
+
         # Logs
         #
         self.logsEdit_ = tkScrolledText.ScrolledText(self.logsTab_, width=40, height=10)
@@ -158,7 +171,7 @@ class mainFrame():
 
         # Extraction du chemin complet vers l'application
         buffer = io.StringIO(retour.stdout)
-        self.bin = buffer.readline() # retrait du saut de ligne final
+        self.appName_ = buffer.readline() # retrait du saut de ligne final
         return True
 
     # Lecture et affichage des valeurs par défaut
@@ -172,7 +185,6 @@ class mainFrame():
     # Deconnexion
     def disConnect(self):
        self.__endConnection()
-
 
     #
     # Méthodes internes
@@ -195,7 +207,7 @@ if "__main__" == __name__:
 
     # L'utilisateur courant doit avoir les droits de root (root ou sudoer)
     if not myFrame.hasRights():
-        print("Vous devez disposer des droits de 'root' pour lancer ce script")
+        print("Vous devez disposer des droits de 'root' ou équivalents pour lancer ce script")
         exit(2)
 
     # On s'assure que l'application est installée sur le poste
